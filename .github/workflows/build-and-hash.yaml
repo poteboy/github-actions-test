@@ -39,26 +39,30 @@ jobs:
           echo "artifact_hash=$DIST_HASH_OUTPUT" >> $GITHUB_OUTPUT
           echo "$DIST_HASH_OUTPUT" >> ./build_hash.txt
 
-      - name: Upload artifact
+      - name: Cache hash
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+        id: cache-build-hash
+        uses: actions/cache@v4
         with:
-          name: build-artifact
           path: ./build_hash.txt
+          key: ${{ runner.os }}-build-hash-${{ hashFiles('./build_hash.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-build-hash-
 
-      - name: Download artifact for comparison
+      - name: Restore hash
         if: startsWith(github.ref, 'refs/heads/hash/')
-        uses: actions/download-artifact@v4
+        id: restore-build-hash
+        uses: actions/cache/restore@v4
         with:
-          name: build-artifact
-          path: artifact
+          path: ./build_hash_restore.txt
+          key: ${{ runner.os }}-build-hash-${{ hashFiles('./build_hash.txt') }}
 
       - name: Read artifact and compare hashes
         if: startsWith(github.ref, 'refs/heads/hash/')
         run: |
           CURRENT_HASH=$(shasum build_hash.txt | cut -d' ' -f1)
-          ARTIFACT_HASH=$(cat artifact/build_hash.txt)
-          if [ "$CURRENT_HASH" == "$ARTIFACT_HASH" ]; then
+          RESTORED_HASH=$(shasum build_hash_restore.txt | cut -d' ' -f1)
+          if [ "$CURRENT_HASH" == "$CACHED_HASH" ]; then
             echo "Hashes match: true"
           else
             echo "Hashes match: false"
