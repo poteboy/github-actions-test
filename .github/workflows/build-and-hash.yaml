@@ -31,23 +31,17 @@ jobs:
         run: bun run build
 
       - name: Calculate hash
+        if: github.ref == 'refs/heads/main'
         id: generate-hash
         run: |
           DIST_HASH_OUTPUT=$(find ./dist -type f -print0 | sort --zero-terminated | \
           xargs -0 sha256sum | cut -d ' ' -f 1 | sha256sum | cut -d ' ' -f 1 | \
           sha256sum | cut -d ' ' -f 1)
-          echo "artifact_hash=$DIST_HASH_OUTPUT" >> $GITHUB_OUTPUT
-          echo "$DIST_HASH_OUTPUT" >> ./build_hash.txt
+          echo "artifact_hash=$DIST_HASH_OUTPUT" >> $GITHUB_ENV
 
-      - name: Cache hash
+      - name: Cache hash when building on main
         if: github.ref == 'refs/heads/main'
-        id: cache-build-hash
-        uses: actions/cache@v4
-        with:
-          path: ./build_hash.txt
-          key: ${{ runner.os }}-build-hash-${{ hashFiles('./build_hash.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-build-hash-
+        run: gh variable set BUILD_HASH --body ${{ steps.generate-hash.outputs.artifact_hash }}
 
       - name: Restore hash
         if: startsWith(github.ref, 'refs/heads/hash/')
@@ -55,15 +49,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ./build_hash_restore.txt
-          key: ${{ runner.os }}-build-hash-${{ hashFiles('./build_hash.txt') }}
+          key: ${{ runner.os }}-build-hash-
 
       - name: Read artifact and compare hashes
         if: startsWith(github.ref, 'refs/heads/hash/')
         run: |
-          CURRENT_HASH=$(shasum build_hash.txt | cut -d' ' -f1)
-          RESTORED_HASH=$(shasum build_hash_restore.txt | cut -d' ' -f1)
-          if [ "$CURRENT_HASH" == "$CACHED_HASH" ]; then
-            echo "Hashes match: true"
-          else
-            echo "Hashes match: false"
-          fi
+          echo "artifact_hash=$DIST_HASH_OUTPUT" >> $GITHUB_OUTPUT
+          echo "$DIST_HASH_OUTPUT" >> ./build_hash_restore.txt
+          diff ./build_hash.txt ./build_hash_restore.txt
