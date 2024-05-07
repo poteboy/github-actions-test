@@ -31,7 +31,6 @@ jobs:
         run: bun run build
 
       - name: Calculate hash
-        # if: github.ref == 'refs/heads/main'
         id: generate-hash
         run: |
           DIST_HASH_OUTPUT=$(find ./dist -type f -print0 | sort --zero-terminated | \
@@ -48,7 +47,7 @@ jobs:
           key: ${{ steps.generate-hash.outputs.artifact_hash }}
 
       - name: Restore hash
-        # if: startsWith(github.ref, 'refs/heads/hash/')
+        if: startsWith(github.ref, 'refs/heads/hash/')
         id: restore_dist_cache_id
         uses: actions/cache/restore@v4
         with:
