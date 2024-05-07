@@ -31,29 +31,30 @@ jobs:
         run: bun run build
 
       - name: Calculate hash
-        if: github.ref == 'refs/heads/main'
+        # if: github.ref == 'refs/heads/main'
         id: generate-hash
         run: |
           DIST_HASH_OUTPUT=$(find ./dist -type f -print0 | sort --zero-terminated | \
           xargs -0 sha256sum | cut -d ' ' -f 1 | sha256sum | cut -d ' ' -f 1 | \
           sha256sum | cut -d ' ' -f 1)
-          echo "artifact_hash=$DIST_HASH_OUTPUT" >> $GITHUB_ENV
+          echo "artifact_hash=$DIST_HASH_OUTPUT" >> $GITHUB_OUTPUT
 
-      - name: Cache hash when building on main
+      - name: Save hash
         if: github.ref == 'refs/heads/main'
-        run: gh variable set BUILD_HASH --body ${{ steps.generate-hash.outputs.artifact_hash }}
+        id: dist_cache_id
+        uses: actions/cache@v4
+        with:
+          path: "**/dist"
+          key: ${{ steps.generate-hash.outputs.artifact_hash }}
 
       - name: Restore hash
         if: startsWith(github.ref, 'refs/heads/hash/')
-        id: restore-build-hash
-        uses: actions/cache/restore@v4
+        id: restore_dist_cache_id
+        uses: actions/cache@v4
         with:
-          path: ./build_hash_restore.txt
-          key: ${{ runner.os }}-build-hash-
+          path: "**/dist"
+          key: ${{ steps.generate-hash.outputs.artifact_hash }}
 
-      - name: Read artifact and compare hashes
-        if: startsWith(github.ref, 'refs/heads/hash/')
-        run: |
-          echo "artifact_hash=$DIST_HASH_OUTPUT" >> $GITHUB_OUTPUT
-          echo "$DIST_HASH_OUTPUT" >> ./build_hash_restore.txt
-          diff ./build_hash.txt ./build_hash_restore.txt
+      - name: Automerge Renovate -print0
+        if: steps.dist_cache_id.outputs.cache-hit == 'true'
+        run: echo "Cache hit"
