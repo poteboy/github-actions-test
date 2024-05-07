@@ -56,5 +56,5 @@ jobs:
           key: ${{ steps.generate-hash.outputs.artifact_hash }}
 
       - name: Automerge Renovate -print0
-        if: step.restore_dist_cache_id.outputs.cache-hit == 'true'
+        if: steps.restore_dist_cache_id.outputs.cache-hit == 'true'
         run: echo "Cache hit"
