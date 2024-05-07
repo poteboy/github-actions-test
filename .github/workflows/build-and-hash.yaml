@@ -50,7 +50,7 @@ jobs:
       - name: Restore hash
         # if: startsWith(github.ref, 'refs/heads/hash/')
         id: restore_dist_cache_id
-        uses: actions/cache.restore@v4
+        uses: actions/cache/restore@v4
         with:
           path: "**/dist"
           key: ${{ steps.generate-hash.outputs.artifact_hash }}
