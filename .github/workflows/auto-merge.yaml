@@ -1,0 +1,19 @@
+name: Auto Merge
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Auto merge
+        run: gh pr merge --merge --auto "$PR_NUMBER"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{github.event.pull_request.number}}
