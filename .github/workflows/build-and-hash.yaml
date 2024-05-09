@@ -40,7 +40,7 @@ jobs:
         id: dist_cache_id
         uses: actions/cache/save@v4
         with:
-          path: "**/dist"
+          path: "**/dist/index.html"
           key: ${{ steps.generate-hash.outputs.artifact_hash }}
 
       - name: Restore hash
@@ -48,5 +48,5 @@ jobs:
         id: restore_dist_cache_id
         uses: actions/cache/restore@v4
         with:
-          path: "**/dist"
+          path: "**/dist/index.html"
           key: ${{ steps.generate-hash.outputs.artifact_hash }}
